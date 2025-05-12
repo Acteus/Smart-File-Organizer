@@ -4,6 +4,7 @@ use crate::cloud_sync;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri_plugin_dialog::DialogExt;
+use tokio::sync::oneshot;
 
 // Simple greeting for initial testing
 #[tauri::command]
@@ -15,20 +16,19 @@ pub fn greet(name: &str) -> String {
 #[tauri::command]
 pub async fn select_folder(app: tauri::AppHandle) -> Result<String, String> {
     let dialog = app.dialog();
-    
-    // Try to open a file dialog and use the parent folder path
-    match dialog.file().blocking_pick_file() {
-        Some(path) => {
-            // Convert the path to a string
-            let path_str = path.to_string();
-            // Convert the string to a PathBuf and get the parent
-            if let Some(parent) = std::path::Path::new(&path_str).parent() {
-                Ok(parent.to_string_lossy().to_string())
-            } else {
-                Ok(path_str) // If we can't get parent, return the file path
-            }
+    let (tx, rx) = oneshot::channel();
+
+    dialog.file().pick_folder(move |folder_path| {
+        let _ = tx.send(folder_path);
+    });
+
+    match rx.await {
+        Ok(Some(path)) => match path.as_path() {
+            Some(p) => Ok(p.to_string_lossy().to_string()),
+            None => Err("Invalid path".to_string()),
         },
-        None => Err("No file selected".to_string()),
+        Ok(None) => Err("No folder selected".to_string()),
+        Err(_) => Err("Failed to receive folder selection".to_string()),
     }
 }
 

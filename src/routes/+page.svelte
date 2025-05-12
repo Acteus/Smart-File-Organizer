@@ -10,8 +10,19 @@
   let isWatching = $state(false);
   let searchQuery = $state("");
   let selectedTags = $state<number[]>([]);
-  let allTags = $state([]);
-  let filesList = $state([]);
+  type Tag = { id: number; name: string; color: string };
+  let allTags: Tag[] = $state([]);
+  type FileInfo = {
+    id: number;
+    path: string;
+    name: string;
+    extension: string;
+    size: number;
+    created_at: string;
+    modified_at: string;
+    tags: Tag[];
+  };
+  let filesList: FileInfo[] = $state([]);
   let isLoading = $state(false);
   let viewMode = $state("grid"); // grid or list
   let unsubscribe: () => void;
@@ -133,7 +144,7 @@
 
   // File type icons 
   function getFileIcon(extension: string): string {
-    const iconMap = {
+    const iconMap: { [key: string]: string } = {
       pdf: "📄",
       doc: "📄", docx: "📄", txt: "📄", rtf: "📄", odt: "📄",
       jpg: "🖼️", jpeg: "🖼️", png: "🖼️", gif: "🖼️", webp: "🖼️", svg: "🖼️",
@@ -231,7 +242,9 @@
       <div class="card p-4 mb-6">
         <div class="flex items-center gap-4">
           <div class="relative flex-1">
-            <Search size={18} class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} class="text-gray-400" />
+            </div>
             <input 
               type="text" 
               class="input pl-10 w-full" 
@@ -241,7 +254,7 @@
             />
             {#if searchQuery}
               <button 
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 on:click={clearSearch}
               >
                 <X size={16} />
